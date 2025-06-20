@@ -229,6 +229,10 @@
 
         <h2>The small framework with powerful features</h2>
 
+        <p style="margin-top:1rem;">
+            <a href="/chat.html" class="btn btn-primary" style="background:#0d6efd;color:#fff;padding:.5rem 1rem;border-radius:4px;text-decoration:none;">Open Builder Chat</a>
+        </p>
+
     </div>
 
 </header>

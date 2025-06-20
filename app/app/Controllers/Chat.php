@@ -17,11 +17,24 @@ class Chat extends BaseController
 {
     public function index()
     {
-        if ($this->request->getMethod() !== 'post') {
+        // Allow CORS preflight
+        if ($this->request->getMethod() === 'options') {
+            return $this->response->setStatusCode(200);
+        }
+
+        // Accept both POST (JSON body) and GET (?message=...)
+        $method = strtolower($this->request->getMethod());
+        if (in_array($method, ['post', 'get'], true)) {
+            $userMsg = null;
+            if ($method === 'post') {
+                $userMsg = $this->request->getJSON(true)['message'] ?? null;
+            } else {
+                $userMsg = $this->request->getGet('message');
+            }
+        } else {
             return $this->response->setStatusCode(405);
         }
 
-        $userMsg = $this->request->getJSON(true)['message'] ?? null;
         if (! $userMsg) {
             return $this->failValidationError('message required');
         }
@@ -32,8 +45,17 @@ class Chat extends BaseController
 
         $payload = [
             'messages' => $ctx,
-            'tools'    => file_get_contents(APPPATH . 'Config/tools.json'),
         ];
+
+        // Only supply tool definitions when the user message includes a builder keyword
+        $msgLower = strtolower($userMsg);
+        $payload['tools'] = '';
+        foreach (['scaffold','migrate','zip_project','clean_db'] as $kw) {
+            if (str_contains($msgLower, $kw)) {
+                $payload['tools'] = file_get_contents(APPPATH . 'Config/tools.json');
+                break;
+            }
+        }
 
         $assistantText = $this->callLLM($payload);
 
@@ -63,14 +85,18 @@ class Chat extends BaseController
         $endpoint = getenv('LLM_ENDPOINT') ?: 'http://127.0.0.1:8000/v1/chat';
         /** @var CURLRequest $client */
         $client = service('curlrequest');
-        $resp   = $client->setBody(json_encode($payload))
-                        ->setHeader('Content-Type', 'application/json')
-                        ->post($endpoint);
-        if ($resp->getStatusCode() !== 200) {
-            return 'LLM error: ' . $resp->getBody();
+        try {
+            $resp = $client->setBody(json_encode($payload))
+                           ->setHeader('Content-Type', 'application/json')
+                           ->post($endpoint);
+            if ($resp->getStatusCode() !== 200) {
+                return 'LLM error: ' . $resp->getBody();
+            }
+            $data = json_decode($resp->getBody(), true);
+            return $data['content'] ?? $resp->getBody();
+        } catch (\Throwable $e) {
+            return 'LLM error: ' . $e->getMessage();
         }
-        $data = json_decode($resp->getBody(), true);
-        return $data['content'] ?? $resp->getBody();
     }
 
     private function executeTool(string $name, array $args): string
