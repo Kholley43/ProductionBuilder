@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Builder Chat</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container py-5">
+    <h1 class="mb-4">Builder Chat</h1>
+    <div id="messages" class="border rounded p-3 mb-3" style="height: 400px; overflow:auto;"></div>
+    <form id="chatForm" class="d-flex gap-2">
+        <input type="text" id="msg" class="form-control" placeholder="Say something…" required>
+        <button class="btn btn-primary">Send</button>
+    </form>
+</div>
+<script>
+const messages = document.getElementById('messages');
+function add(role, text) {
+    const div = document.createElement('div');
+    div.className = role === 'user' ? 'text-end' : 'text-start';
+    div.innerHTML = `<span class="badge bg-${role==='user'?'primary':'secondary'}">${role}</span> ` + text;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+document.getElementById('chatForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const text = msg.value.trim();
+    if (!text) return;
+    add('user', text);
+    msg.value = '';
+
+    const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    add('assistant', data.reply);
+    if (data.toolOutput) add('assistant', `<pre>${data.toolOutput}</pre>`);
+});
+</script>
+</body>
+</html> 

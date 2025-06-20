@@ -1,0 +1,31 @@
+[
+  {
+    "name": "scaffold",
+    "description": "Generate CRUD scaffolding for an entity.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "prompt": { "type": "string" }
+      },
+      "required": ["prompt"]
+    }
+  },
+  {
+    "name": "migrate",
+    "description": "Run all pending CodeIgniter migrations.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "zip_project",
+    "description": "Package the project into a ZIP file, excluding builder code, and return the download URL.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+] 
